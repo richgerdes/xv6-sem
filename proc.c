@@ -463,3 +463,73 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+//semaphore struct
+struct semaphore {
+	int value;
+	int active;
+	struct spinlock lock;
+};
+
+//table of 32 semaphores
+static struct semaphore sem_table[NSEM];
+
+//seminit - inits sem table
+void sem_setup(void) {
+	//cprintf("seminit enter\n");
+	int i;
+	for (i = 0; i < NSEM; i++) {
+		sem_table[i].active = 0; //0-not active 1-active
+		//int lock = '0'+i;
+		initlock(&sem_table[i].lock, "sem");
+	}
+	//cprintf("seminit exit\n");
+}
+
+int sem_init(int sem, int val) {
+	//cprintf("sem_init enter\n");
+	acquire(&sem_table[sem].lock);
+	if(sem_table[sem].active!=0){
+		release(&sem_table[sem].lock);
+		return -1;
+	}else{
+		//initlock(&sem_table[sem].lock, "sem");
+		sem_table[sem].active=1;//semaphore is active
+		sem_table[sem].value=val;
+	}
+	release(&sem_table[sem].lock);
+	//cprintf("sem_init exit\n");
+	return 0;
+}
+
+int sem_destroy(int sem) {
+	//cprintf("sem_destroy enter\n");
+	acquire(&sem_table[sem].lock);
+	sem_table[sem].active=0;//semaphore is not active anymore
+	release(&sem_table[sem].lock);
+	//cprintf("sem_destroy exit\n");
+	return 0;
+}
+
+int sem_wait(int sem, int count) {
+	//cprintf("sem_wait enter\n");
+	acquire(&sem_table[sem].lock);
+	while(sem_table[sem].value<count){
+		sleep((void*)&sem_table[sem], &sem_table[sem].lock);
+	}
+	(sem_table[sem].value)-=count;
+	release(&sem_table[sem].lock);
+	//cprintf("sem_wait exit\n");
+	return 0;
+
+}
+
+int sem_signal(int sem, int count) {
+	acquire(&sem_table[sem].lock);
+	sem_table[sem].value+=count;
+	wakeup((void*)&sem_table[sem]);
+	release(&sem_table[sem].lock);
+	return 0;
+}
+
+

@@ -102,3 +102,33 @@ sys_halt(void)
     outw(0xB004, 0x2000);
   return 0;
 }
+
+int sys_sem_init(void){
+	int sem;
+	int value;
+	argint(0, &sem);
+	argint(1, &value);
+	return sem_init(sem,value);
+}
+
+int sys_sem_destroy(void){
+	int sem;
+	argint(0, &sem);
+	return sem_destroy(sem);
+}
+
+int sys_sem_wait(void) {
+	int sem;
+	int count;
+	argint(0, &sem);
+	argint(1, &count);
+	return sem_wait(sem, count);
+}
+
+int sys_sem_signal(void) {
+	int sem;
+	int count;
+	argint(0, &sem);
+	argint(1, &count);
+	return sem_signal(sem, count);
+}
